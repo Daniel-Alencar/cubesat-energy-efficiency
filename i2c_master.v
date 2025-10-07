@@ -7,10 +7,12 @@ module i2c_master #(parameter CLK_IN_FREQ_MHZ=10, SCL_FREQ_KHZ=100, RETRY_NUM=3)
     input [7:0] wr_data_in,
     output ready_out, wr_valid_out, rd_valid_out,
     output [7:0] rd_data_out,
+    output [3:0] value_state,
     inout SCL, SDA
 );
 /*
-Cálculo dos parâmetros OVERSAMPLING e T_HD_CNT, considerando CLK_IN_FREQ entre 10 MHz e 100 MHz,
+Cálculo dos parâmetros OVERSAMPLING e T_HD_CNT, 
+considerando CLK_IN_FREQ entre 10 MHz e 100 MHz,
 múltiplo de 10 MHz, e SCL_FREQ entre 1 kHz e 400 kHz
 */
 // Número de ciclos do clk_in para gerar um ciclo SCL
@@ -69,12 +71,12 @@ para "bus free condition": ~1/2 ciclo de SCL em nível alto
 */
 // Verifica se SCL está livre (em HIGH por meio ciclo)
 reg [$clog2(OVERSAMPLING)-1:0] SCL_busy_cnt = 0;
-reg SCL_busy_reg = 1'b1;
+reg SCL_busy_reg = 1'b0;
 always @(posedge clk_in)
 // Se SCL_line estiver em nível baixo, zera o contador e indica que SCL está ocupado
 if (~SCL_line) begin
     SCL_busy_cnt <= 0;
-    SCL_busy_reg <= 1'b1;
+    SCL_busy_reg <= 1'b0;
 end
 // Se SCL_line estiver em nível alto por meio ciclo, indica que SCL está livre
 // Dúvida: por que OVERSAMPLING-1? Não seria OVERSAMPLING/2-1?
@@ -147,7 +149,8 @@ always @(*) begin
     next_byte = byte_cnt;
     case (state)
     IDLE:
-    // Fica parado esperando o sinal enable_in e um número válido de bytes (data_bytes_in > 0)
+    // Fica parado esperando o sinal enable_in 
+    // e um número válido de bytes (data_bytes_in > 0)
     // Se recebeu um comando, zera contadores e vai para START
     if (ready_reg && enable_in && data_bytes_in > 0) begin
         next_clk = 0;
@@ -296,7 +299,6 @@ always @(*) begin
         next_state = START;
     end
 
-    // 
     STOP:
     if (clk_cnt == OVERSAMPLING-1)
     next_state = IDLE;
@@ -455,4 +457,5 @@ assign SCL_line = SCL;
 assign SDA = SDA_reg ? 1'bZ : 1'b0;
 assign SDA_line = SDA;
 assign rd_data_out = rd_data_reg;
+assign value_state = state;
 endmodule

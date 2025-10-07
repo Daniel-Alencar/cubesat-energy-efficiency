@@ -4,7 +4,7 @@ module power_on_rst(
     output n_rst_out
 ); 
 // Declaração do sinal de reset (ativo durante os primeiros 8 ciclos de clock)   
-reg [7:0] rst_reg = 8'hFF;
+reg [7:0] rst_reg = 8'h01;
 // Deslocamento de bit
 always @(posedge clk_in)
 rst_reg <= rst_reg >> 1;
