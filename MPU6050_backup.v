@@ -300,22 +300,11 @@ always @(*) begin
     STORE_BYTE:
     if (i2c_rd_valid_in) begin
         data_buffer[byte_cnt] = i2c_rd_data_in;
-        if (byte_cnt == TOTAL_BYTES-1) begin
-            next_state = TIMER; // Alterado: vai para o timer DEPOIS de ler
-            next_clk = 0;       // Garante que o contador do timer comece do zero
-        end
+        if (byte_cnt == TOTAL_BYTES-1)
+            next_state = UART_SEND;
         else
             next_byte_cnt = byte_cnt + 1;
     end
-
-    TIMER:
-    if (clk_cnt == TIMER_PARAM-1) begin
-        next_clk = 0;
-        next_state = UART_SEND; // Alterado: vai para a transmissão DEPOIS de esperar
-        next_byte_cnt = 0;      // Prepara o contador de bytes para a transmissão
-    end
-    else
-        next_clk = clk_cnt + 1;
 
     UART_SEND:
     if (uart_tx_ready_in) begin
@@ -327,10 +316,18 @@ always @(*) begin
         next_uart_tx_en = 1'b0;
         next_writting = 1'b0;
         if (byte_cnt == TOTAL_BYTES-1)
-            next_state = READ_ADDR; // Alterado: volta para ler novos dados
+            next_state = TIMER;
         else
             next_byte_cnt = byte_cnt + 1;
     end
+
+    TIMER:
+    if (clk_cnt == TIMER_PARAM-1) begin
+        next_clk = 0;
+        next_state = READ_ADDR;
+    end
+    else
+        next_clk = clk_cnt + 1;
 
     endcase
 end

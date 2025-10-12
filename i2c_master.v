@@ -71,12 +71,12 @@ para "bus free condition": ~1/2 ciclo de SCL em nível alto
 */
 // Verifica se SCL está livre (em HIGH por meio ciclo)
 reg [$clog2(OVERSAMPLING)-1:0] SCL_busy_cnt = 0;
-reg SCL_busy_reg = 1'b0;
+reg SCL_busy_reg = 1'b1;
 always @(posedge clk_in)
 // Se SCL_line estiver em nível baixo, zera o contador e indica que SCL está ocupado
 if (~SCL_line) begin
     SCL_busy_cnt <= 0;
-    SCL_busy_reg <= 1'b0;
+    SCL_busy_reg <= 1'b1;
 end
 // Se SCL_line estiver em nível alto por meio ciclo, indica que SCL está livre
 // Dúvida: por que OVERSAMPLING-1? Não seria OVERSAMPLING/2-1?
@@ -172,17 +172,17 @@ always @(*) begin
     // Se detectar que a linha SDA não corresponde ao que esperava, vai para RETRY
     // Dúvida: por que 78% de OVERSAMPLING?
     if (clk_cnt == (78*OVERSAMPLING/100)-1 && SDA_reg != SDA_line)    
-    next_state = RETRY;
+        next_state = RETRY;
     // Quando termina de enviar os bits, muda para ADDRESS_ACK
     else if (clk_cnt == OVERSAMPLING-1) begin
         next_clk = 0;
         if (bit_cnt == 7)
-        next_state = ADDRESS_ACK;
+            next_state = ADDRESS_ACK;
         else
-        next_bit = bit_cnt + 1;
+            next_bit = bit_cnt + 1;
     end
     else if (sync_reg)
-    next_clk = clk_cnt + 1;
+        next_clk = clk_cnt + 1;
 
     // Lê o ACK/NACK do escravo
     // Se recebeu ACK (ack_reg == 0), decide se vai escrever (WRITE_DATA) ou ler (READ_DATA)
@@ -311,24 +311,24 @@ end
 always @(*) begin
     next_SCL = SCL_reg;
     case (state)
-    IDLE:
-    next_SCL = 1'b1;
-    START:
-    if (clk_cnt == OVERSAMPLING-1)
-    next_SCL = 1'b0;
-    REP_START:
-    if (clk_cnt == (55*OVERSAMPLING/100)-1)
-    next_SCL = 1'b1;
-    RETRY:
-    next_SCL = 1'b1;
-    STOP:
-    if (clk_cnt == (55*OVERSAMPLING/100)-1)
-    next_SCL = 1'b1;
-    default:
-    if (clk_cnt == (55*OVERSAMPLING/100)-1)
-    next_SCL = 1'b1;
-    else if (clk_cnt == OVERSAMPLING-1)
-    next_SCL = 1'b0;
+        IDLE:
+            next_SCL = 1'b1;
+        START:
+            if (clk_cnt == OVERSAMPLING-1)
+                next_SCL = 1'b0;
+        REP_START:
+            if (clk_cnt == (55*OVERSAMPLING/100)-1)
+                next_SCL = 1'b1;
+        RETRY:
+            next_SCL = 1'b1;
+        STOP:
+            if (clk_cnt == (55*OVERSAMPLING/100)-1)
+                next_SCL = 1'b1;
+        default:
+            if (clk_cnt == (55*OVERSAMPLING/100)-1)
+                next_SCL = 1'b1;
+            else if (clk_cnt == OVERSAMPLING-1)
+                next_SCL = 1'b0;
     endcase
 end
 
